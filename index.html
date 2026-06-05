@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Trade Log</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; font-size: 13px; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+.header { background: #161b22; border-bottom: 1px solid #21262d; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 13px; color: #58a6ff; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+.header .date { font-size: 11px; color: #6e7681; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #21262d; border-bottom: 1px solid #21262d; }
+.stat { background: #0d1117; padding: 10px 16px; }
+.stat-label { font-size: 10px; color: #6e7681; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 3px; }
+.stat-value { font-size: 18px; font-weight: 700; }
+.stat-value.pos { color: #3fb950; }
+.stat-value.neg { color: #f85149; }
+.stat-value.neutral { color: #c9d1d9; }
+.stat-value.blue { color: #58a6ff; }
+.form-section { background: #161b22; border-bottom: 1px solid #21262d; padding: 12px 16px; }
+.form-title { font-size: 10px; color: #6e7681; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.form-row.three { grid-template-columns: 2fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 10px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.6px; }
+.form-group input, .form-group select {
+  background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+  padding: 8px 10px; font-family: 'Courier New', monospace; font-size: 14px;
+  border-radius: 6px; width: 100%; outline: none; height: 40px;
+  -webkit-appearance: none; appearance: none;
+}
+.form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e7681' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+.form-group input:focus, .form-group select:focus { border-color: #58a6ff; }
+.toggle-row { display: flex; gap: 6px; }
+.dir-btn, .type-btn { flex: 1; padding: 0; height: 40px; border: 1px solid #30363d; background: #0d1117; color: #6e7681; font-family: 'Courier New', monospace; font-size: 13px; border-radius: 6px; cursor: pointer; letter-spacing: 1px; text-align: center; line-height: 40px; }
+.dir-btn.active-long { background: #0d2218; border-color: #3fb950; color: #3fb950; }
+.dir-btn.active-short { background: #2d0e0e; border-color: #f85149; color: #f85149; }
+.type-btn.active-mini { background: #1a2a3a; border-color: #58a6ff; color: #58a6ff; }
+.type-btn.active-micro { background: #1a2232; border-color: #a371f7; color: #a371f7; }
+.calc-preview { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 11px; color: #6e7681; }
+.calc-preview .val { color: #58a6ff; }
+.add-btn { width: 100%; padding: 12px; background: #1f3a5f; border: 1px solid #58a6ff; color: #58a6ff; font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 1px; border-radius: 6px; cursor: pointer; text-transform: uppercase; margin-top: 4px; }
+.add-btn:active { background: #2d4f7c; }
+.log-section { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+.log-header { display: grid; grid-template-columns: 2fr 0.8fr 0.5fr 0.8fr 0.8fr 0.9fr; gap: 4px; padding: 6px 16px; background: #161b22; border-bottom: 1px solid #21262d; }
+.log-header span { font-size: 9px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.6px; text-align: right; }
+.log-header span:first-child { text-align: left; }
+.trade-row { display: grid; grid-template-columns: 2fr 0.8fr 0.5fr 0.8fr 0.8fr 0.9fr; gap: 4px; padding: 8px 16px; border-bottom: 1px solid #161b22; align-items: center; }
+.trade-row.win { border-left: 2px solid #3fb950; }
+.trade-row.loss { border-left: 2px solid #f85149; }
+.trade-ticker { font-size: 12px; font-weight: 700; color: #c9d1d9; }
+.trade-sub { font-size: 9px; color: #6e7681; }
+.trade-dir { font-size: 10px; text-align: right; }
+.trade-dir.long { color: #3fb950; }
+.trade-dir.short { color: #f85149; }
+.trade-val { font-size: 11px; text-align: right; }
+.trade-val.pos { color: #3fb950; }
+.trade-val.neg { color: #f85149; }
+.trade-val.muted { color: #6e7681; }
+.trade-contracts { font-size: 11px; color: #8b949e; text-align: right; }
+.empty-state { padding: 40px 16px; text-align: center; color: #6e7681; font-size: 12px; }
+.footer { position: fixed; bottom: 0; left: 0; right: 0; background: #0d1117; border-top: 1px solid #21262d; padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+.reset-btn { width: 100%; padding: 12px; background: #2d0e0e; border: 1px solid #f85149; color: #f85149; font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 1px; border-radius: 6px; cursor: pointer; text-transform: uppercase; }
+.reset-btn:active { background: #3d1515; }
+.confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+.confirm-overlay.show { display: flex; }
+.confirm-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 24px 20px; width: 80%; max-width: 300px; text-align: center; }
+.confirm-box p { color: #c9d1d9; font-size: 14px; margin-bottom: 20px; }
+.confirm-btns { display: flex; gap: 12px; }
+.confirm-btns button { flex: 1; padding: 12px; font-family: 'Courier New', monospace; font-size: 13px; border-radius: 6px; cursor: pointer; border: 1px solid; text-transform: uppercase; letter-spacing: 1px; }
+.confirm-yes { background: #2d0e0e; border-color: #f85149 !important; color: #f85149; }
+.confirm-no { background: #1f3a5f; border-color: #58a6ff !important; color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⬛ Trade Log</h1>
+  <span class="date" id="todayDate"></span>
+</div>
+
+<div class="stats-grid">
+  <div class="stat"><div class="stat-label">W / L</div><div class="stat-value neutral" id="wl">0 / 0</div></div>
+  <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value neutral" id="winrate">—</div></div>
+  <div class="stat"><div class="stat-label">Gross P&L</div><div class="stat-value neutral" id="grossPL">0.00</div></div>
+  <div class="stat"><div class="stat-label">Net P&L</div><div class="stat-value neutral" id="netPL">0.00</div></div>
+  <div class="stat"><div class="stat-label">Total Fees</div><div class="stat-value blue" id="totalFees">0.00</div></div>
+  <div class="stat"><div class="stat-label">Total Commissions</div><div class="stat-value blue" id="totalComm">0.00</div></div>
+  <div class="stat" style="grid-column: span 2; border-top: 1px solid #21262d;"><div class="stat-label">Total Position Costs</div><div class="stat-value blue" id="totalCosts">0.00</div></div>
+</div>
+
+<div class="form-section">
+  <div class="form-title">+ New Trade</div>
+  <div class="form-row three">
+    <div class="form-group">
+      <label>Instrument</label>
+      <select id="ticker" onchange="onTickerChange()">
+        <option value="" disabled selected>Select…</option>
+        <option value="NQ">NQ</option>
+        <option value="MNQ">MNQ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Contracts</label>
+      <input id="contracts" type="number" inputmode="numeric" placeholder="1" min="1" step="1" oninput="updatePreview()" />
+    </div>
+    <div class="form-group">
+      <label>Direction</label>
+      <div class="toggle-row">
+        <div class="dir-btn active-long" id="btnLong" onclick="setDir('LONG')">L</div>
+        <div class="dir-btn" id="btnShort" onclick="setDir('SHORT')">S</div>
+      </div>
+    </div>
+  </div>
+  <div class="form-group" style="margin-bottom:8px;">
+    <label>Contract Type</label>
+    <div class="toggle-row">
+      <div class="type-btn active-mini" id="btnMini" onclick="setType('mini')">Mini</div>
+      <div class="type-btn" id="btnMicro" onclick="setType('micro')">Micro</div>
+    </div>
+  </div>
+  <div class="calc-preview" id="calcPreview">
+    <span>Fees: <span class="val" id="prevFees">—</span></span>
+    <span>Commission: <span class="val" id="prevComm">—</span></span>
+    <span>Total: <span class="val" id="prevTotal">—</span></span>
+  </div>
+  <div class="form-group" style="margin-bottom:6px;">
+    <label>Gross P&L</label>
+    <input id="pnl" type="number" inputmode="decimal" placeholder="e.g. 250.00" step="0.01" />
+  </div>
+  <div class="toggle-row" style="margin-bottom:8px;">
+    <div class="dir-btn active-long" id="btnWin" onclick="setOutcome('win')" style="font-size:12px;letter-spacing:0.5px;">Win</div>
+    <div class="dir-btn" id="btnLoss" onclick="setOutcome('loss')" style="font-size:12px;letter-spacing:0.5px;">Loss</div>
+  </div>
+  <button class="add-btn" onclick="addTrade()">Add Trade</button>
+</div>
+
+<div class="log-section">
+  <div class="log-header">
+    <span>Instrument</span><span>Cts</span><span>Dir</span><span>Gross</span><span>Cost</span><span>Net</span>
+  </div>
+  <div id="tradeLog"></div>
+</div>
+
+<div class="footer">
+  <button class="reset-btn" onclick="confirmReset()">↺ Reset Day</button>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>Reset all trades for today?</p>
+    <div class="confirm-btns">
+      <button class="confirm-yes" onclick="resetDay()">Reset</button>
+      <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let trades = [], direction = 'LONG', contractType = 'mini', outcome = 'win';
+const RATES = { mini: { fee: 2.80, comm: 1.00 }, micro: { fee: 0.74, comm: 0.50 } };
+
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+
+function setOutcome(o) {
+  outcome = o;
+  document.getElementById('btnWin').className = 'dir-btn' + (o === 'win' ? ' active-long' : '') + ' ';
+  document.getElementById('btnLoss').className = 'dir-btn' + (o === 'loss' ? ' active-short' : '') + ' ';
+  const pnl = document.getElementById('pnl');
+  const val = parseFloat(pnl.value);
+  if (!isNaN(val) && val !== 0) {
+    pnl.value = o === 'win' ? Math.abs(val) : -Math.abs(val);
+  }
+}
+
+function onTickerChange() {
+  const v = document.getElementById('ticker').value;
+  if (v === 'NQ') setType('mini');
+  else if (v === 'MNQ') setType('micro');
+  updatePreview();
+}
+
+function setDir(d) {
+  direction = d;
+  document.getElementById('btnLong').className = 'dir-btn' + (d === 'LONG' ? ' active-long' : '');
+  document.getElementById('btnShort').className = 'dir-btn' + (d === 'SHORT' ? ' active-short' : '');
+}
+
+function setType(t) {
+  contractType = t;
+  document.getElementById('btnMini').className = 'type-btn' + (t === 'mini' ? ' active-mini' : '');
+  document.getElementById('btnMicro').className = 'type-btn' + (t === 'micro' ? ' active-micro' : '');
+  updatePreview();
+}
+
+function calcCosts(n, type) {
+  const r = RATES[type];
+  const fees = +(n * r.fee).toFixed(2);
+  const comm = +(n * r.comm).toFixed(2);
+  return { fees, comm, total: +(fees + comm).toFixed(2) };
+}
+
+function updatePreview() {
+  const n = parseFloat(document.getElementById('contracts').value) || 0;
+  if (n <= 0) {
+    ['prevFees','prevComm','prevTotal'].forEach(id => document.getElementById(id).textContent = '—');
+    return;
+  }
+  const c = calcCosts(n, contractType);
+  document.getElementById('prevFees').textContent = c.fees.toFixed(2);
+  document.getElementById('prevComm').textContent = c.comm.toFixed(2);
+  document.getElementById('prevTotal').textContent = c.total.toFixed(2);
+}
+
+function addTrade() {
+  const ticker = document.getElementById('ticker').value;
+  const contracts = parseFloat(document.getElementById('contracts').value);
+  const pnl = parseFloat(document.getElementById('pnl').value);
+  if (!ticker) { document.getElementById('ticker').focus(); return; }
+  if (!contracts || contracts < 1) { document.getElementById('contracts').focus(); return; }
+  if (isNaN(pnl)) { document.getElementById('pnl').focus(); return; }
+  const signedPnl = outcome === 'win' ? Math.abs(pnl) : -Math.abs(pnl);
+  const costs = calcCosts(contracts, contractType);
+  trades.unshift({ ticker, contracts, contractType, direction, pnl: signedPnl, fees: costs.fees, comm: costs.comm });
+  document.getElementById('contracts').value = '';
+  document.getElementById('pnl').value = '';
+  document.getElementById('ticker').selectedIndex = 0;
+  updatePreview();
+  render();
+}
+
+function fmt(n) { return (n >= 0 ? '+' : '') + n.toFixed(2); }
+
+function render() {
+  const wins = trades.filter(t => t.pnl > 0).length;
+  const losses = trades.filter(t => t.pnl <= 0).length;
+  const grossPL = trades.reduce((s,t) => s+t.pnl, 0);
+  const totalFees = trades.reduce((s,t) => s+t.fees, 0);
+  const totalComm = trades.reduce((s,t) => s+t.comm, 0);
+  const netPL = grossPL - totalFees - totalComm;
+  const wr = trades.length ? Math.round((wins/trades.length)*100) : null;
+
+  document.getElementById('wl').textContent = wins + ' / ' + losses;
+  document.getElementById('winrate').textContent = wr !== null ? wr + '%' : '—';
+  document.getElementById('totalFees').textContent = totalFees.toFixed(2);
+  document.getElementById('totalComm').textContent = totalComm.toFixed(2);
+  document.getElementById('totalCosts').textContent = (totalFees + totalComm).toFixed(2);
+
+  const gEl = document.getElementById('grossPL');
+  gEl.textContent = fmt(grossPL);
+  gEl.className = 'stat-value ' + (grossPL > 0 ? 'pos' : grossPL < 0 ? 'neg' : 'neutral');
+
+  const nEl = document.getElementById('netPL');
+  nEl.textContent = fmt(netPL);
+  nEl.className = 'stat-value ' + (netPL > 0 ? 'pos' : netPL < 0 ? 'neg' : 'neutral');
+
+  const log = document.getElementById('tradeLog');
+  if (!trades.length) { log.innerHTML = '<div class="empty-state">No trades yet today</div>'; return; }
+  log.innerHTML = trades.map(t => {
+    const net = t.pnl - t.fees - t.comm;
+    return `<div class="trade-row ${t.pnl > 0 ? 'win' : 'loss'}">
+      <div><div class="trade-ticker">${t.ticker}</div><div class="trade-sub">${t.contractType}</div></div>
+      <span class="trade-contracts">${t.contracts}</span>
+      <span class="trade-dir ${t.direction==='LONG'?'long':'short'}">${t.direction==='LONG'?'L':'S'}</span>
+      <span class="trade-val ${t.pnl>=0?'pos':'neg'}">${fmt(t.pnl)}</span>
+      <span class="trade-val muted">${(t.fees+t.comm).toFixed(2)}</span>
+      <span class="trade-val ${net>=0?'pos':'neg'}">${fmt(net)}</span>
+    </div>`;
+  }).join('');
+}
+
+function confirmReset() { document.getElementById('confirmOverlay').classList.add('show'); }
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+function resetDay() { trades = []; closeConfirm(); render(); }
+
+render();
+</script>
+</body>
+</html>
